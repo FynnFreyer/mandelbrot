@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>Mandelbrot</title>
+    <meta name="description"
+          content="Renders the Mandelbrot set.">
+    <meta name="author" content="Fynn Freyer">
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.3.1/p5.min.js"></script>
+</head>
+<body style="padding: 0; margin: 0;"></body>
+</html>
+
+<script>
+    let width, height;
+    let complexNums, pixels, colorGradient;
+
+    let iterations = 25;
+    let limit = 10**7;
+
+    function setup() {
+        width = 2000;
+        height = 2000;
+        createCanvas(width, height);
+
+        complexNums = new Array(width);
+        pixels = new Array(width);
+
+        let startColor = color('#ee0979');
+        let endColor = color('#ff6a00');
+        colorGradient = colorGradientArray(startColor, endColor, iterations);
+
+        for (let i = 0; i < width; i++) {
+            complexNums[i] = new Array(height);
+            pixels[i] = new Array(height);
+
+            for (let j = 0; j < height; j++) {
+                let scaleToLength = 4;
+                let offset = scaleToLength/2;
+
+                let real = (i * (scaleToLength/width)) - offset;
+                let imaginary = (j * (scaleToLength/height)) - offset;
+
+                //complexNums[i][j] = new Complex(real, imaginary)
+                //pixels[i][j] = complexNums[i][j].getIterations(limit, iterations);
+                pixels[i][j] = new Complex(real, imaginary).getIterations(limit, iterations);
+            }
+        }
+
+        noStroke();
+        noFill();
+    }
+
+    function draw() {
+        if (frameCount === 1) {
+            clear();
+            for (let x = 0; x < width; x++) {
+                for (let y = 0; y < width; y++) {
+                    let iters = pixels[x][y];
+                    let c = iters != 0 ? colorGradient[iters] : {r: 0, g: 0, b: 0};
+                    stroke(c.r, c.g, c.b);
+                    point(x, y);
+                    noStroke();
+                }
+            }
+        }
+    }
+
+    function colorGradientArray(start, end, steps) {
+        let rDiff = red(end) - red(start);
+        let gDiff = green(end) - green(start);
+        let bDiff = blue(end) - blue(start);
+
+        const colors = [];
+        
+        for (let i=0; i<=steps; i++) {
+            let c = {r: red(start)+i*(rDiff/steps), g: green(start)+i*(gDiff/steps), b: blue(start)+i*(bDiff/steps)};
+            colors.push(c);
+        }
+
+        return colors;
+    }
+
+    class Complex {
+        constructor(real, imaginary) {
+            this.real = real;
+            this.imaginary = imaginary;
+        }
+
+        add(complex) {
+            return new Complex(this.real + complex.real, this.imaginary + complex.imaginary);
+        }
+
+        multiply(complex) {
+            let real = (this.real * complex.real) - (this.imaginary * complex.imaginary);
+            let imaginary = (this.real * complex.imaginary) + (this.imaginary * complex.real);
+
+            return new Complex(real, imaginary);
+        }
+
+        absolute() {
+            return sqrt(this.real**2 + this.imaginary**2);
+        }
+
+        getIterations(limit, max_iterations = 5) {
+            let z = new Complex(0, 0);
+            let c = this;
+            for (let i = 0; i <= max_iterations; i++) {
+                if (z.absolute() >= limit) {
+                    return i;
+                }
+                let z_sq = z.multiply(z);
+                z = z_sq.add(c);
+            }
+            return 0;
+        }
+    }
+</script>
